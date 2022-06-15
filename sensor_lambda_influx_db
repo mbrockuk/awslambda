@@ -1,0 +1,52 @@
+//import InfluxDB client, this is possible thanks to the layer we created
+const {InfluxDB, Point, } = require('@influxdata/influxdb-client')
+
+//grab environment variables
+const org = process.env.org
+const bucket = process.env.bucket
+const token = process.env.token;
+const url = process.env.url
+
+//lambda event handler, this code is ran on every external request
+exports.handler =  async (event) => {
+
+
+    var pressureInputValue = JSON.parse(event.pressure);
+    var viscosityInputValue = JSON.parse(event.viscosity);
+    var sensordatetimeValue = new Date(event.sensordatetime);
+    
+    //Create clientID
+    var clientid = JSON.stringify(event.clientid);
+    var deviceid = JSON.stringify(event.deviceid);
+    var sensorInputName = deviceid+clientid; 
+ 
+    //create InfluxDB api client with URL and token, then create Write API for the specific org and bucket
+    const writeApi = await new InfluxDB({url, token}).getWriteApi(org, bucket);
+ 
+    //create a data point with pressure as the measurement name, field values for pressure and viscosity, and sensorID tag
+    // note... influxdb wants timestamp in nanoseconds hence the multiply(!)
+    const dataPoint = new Point('pressure')
+        .floatField('pressure', pressureInputValue)
+        .floatField('viscosity', viscosityInputValue)
+        .tag('sensorID', sensorInputName)
+        .timestamp(sensordatetimeValue)
+        
+    //write data point
+    await writeApi.writePoint(dataPoint)
+        
+    //close write API
+    await writeApi.close().then(() => {
+   //     console.log('WRITE FINISHED')
+    })
+    
+    //send back response to the client
+    const response = {
+        statusCode: 200,
+        body: JSON.stringify('Write successful'),
+    };
+    return response;
+};
+
+
+
+
