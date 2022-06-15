@@ -1,4 +1,11 @@
-//import InfluxDB client, this is possible thanks to the layer we created
+//
+// simple AWS lambda which receives sensor data (JSON encoded) via IoT (MQTT)
+// parses it out and squirts it into our influxdb (configuration set in the env vars)
+//
+// Matt Brocklehurst 
+//
+
+// influxdb-client is part of the layer we created and imported into AWS
 const {InfluxDB, Point, } = require('@influxdata/influxdb-client')
 
 //grab environment variables
